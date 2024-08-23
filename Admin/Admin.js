@@ -3,13 +3,7 @@ import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, addDoc } fro
 
 // Your Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyDcwlOmF9HIk3_24aKNHkJjT6FPQiwy2Mo",
-    authDomain: "hacker-s-portal.firebaseapp.com",
-    projectId: "hacker-s-portal",
-    storageBucket: "hacker-s-portal.appspot.com",
-    messagingSenderId: "848457459024",
-    appId: "1:848457459024:web:7ed2c2dcd7624d39a03855",
-    measurementId: "G-3D11Q02VRT"
+    // keys Are hidden due to security reasons
 };
 
 const app = initializeApp(firebaseConfig);
