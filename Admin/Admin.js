@@ -1,14 +1,24 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, addDoc, getDoc,updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
 // Your Firebase configuration
 const firebaseConfig = {
+    apiKey: "AIzaSyDcwlOmF9HIk3_24aKNHkJjT6FPQiwy2Mo",
+    authDomain: "hacker-s-portal.firebaseapp.com",
+    projectId: "hacker-s-portal",
+    storageBucket: "hacker-s-portal.appspot.com",
+    messagingSenderId: "848457459024",
+    appId: "1:848457459024:web:7ed2c2dcd7624d39a03855",
+    measurementId: "G-3D11Q02VRT"
     // keys Are hidden due to security reasons
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 var id = null;
+
+
+
 
 // Elements from the HTML
 let submit = document.getElementById("Submit");
@@ -49,16 +59,17 @@ submit.addEventListener('click', async function (e) {
         min.value = '';
         price.value = '';
         duration.value = '';
-        
+
         fetchData(); // Fetch data again after submitting a new entry
     } catch (e) {
         console.error("Error adding document: ", e);
     }
 });
-
+let i;
 // Function to fetch data from Firestore
 async function fetchData() {
     tableBody.innerHTML = ""; // Clear existing table rows
+     i = 0;
     try {
         const querySnapshot = await getDocs(collection(db, "hackathons"));
         querySnapshot.forEach((doc) => {
@@ -69,7 +80,7 @@ async function fetchData() {
     }
 }
 
-let i = 0;
+
 
 // Function to append a new row to the table
 function appendElement(item) {
@@ -106,19 +117,19 @@ function appendElement(item) {
         let docId = viewButton.getAttribute('data-id');
         console.log("View details for document ID: ", docId);
         id = docId;
-    
+
         // Fetch and display team names
         await displayTeamNames(docId);
-    
+
         // Extra smooth scroll to the bottom
         extraSmoothScrollTo(document.body.scrollHeight, 1500); // 1500ms for duration, adjust as needed
     });
-    
+
     function extraSmoothScrollTo(targetPosition, duration) {
         const startPosition = window.scrollY;
         const distance = targetPosition - startPosition;
         let startTime = null;
-    
+
         function animation(currentTime) {
             if (startTime === null) startTime = currentTime;
             const timeElapsed = currentTime - startTime;
@@ -126,17 +137,17 @@ function appendElement(item) {
             window.scrollTo(0, progress);
             if (timeElapsed < duration) requestAnimationFrame(animation);
         }
-    
+
         function easeInOutCubic(t, b, c, d) {
             t /= d / 2;
             if (t < 1) return c / 2 * t * t * t + b;
             t -= 2;
             return c / 2 * (t * t * t + 2) + b;
         }
-    
+
         requestAnimationFrame(animation);
     }
-    
+
 
     // Double-click to delete the row and the document from Firestore
     tr.addEventListener("dblclick", async function () {
@@ -210,7 +221,9 @@ async function updateWinnerAndRunnerUp(hackathonId, winnerName, runnerUpName) {
     try {
         const teamsCollectionRef = collection(db, "hackathons", hackathonId, "teams");
         const querySnapshot = await getDocs(teamsCollectionRef);
-        
+
+        ;
+
         let winnerId = '';
         let runnerUpId = '';
 
@@ -219,6 +232,7 @@ async function updateWinnerAndRunnerUp(hackathonId, winnerName, runnerUpName) {
             const data = doc.data();
             if (data.teamname === winnerName) {
                 winnerId = doc.id;
+
             } else if (data.teamname === runnerUpName) {
                 runnerUpId = doc.id;
             }
@@ -233,14 +247,85 @@ async function updateWinnerAndRunnerUp(hackathonId, winnerName, runnerUpName) {
         // Update the teams collection with winner and runner-up status
         await setDoc(doc(db, "hackathons", hackathonId, "teams", winnerId), {
             isWinner: true,
-            position : 1
+            position: 1
+
         }, { merge: true });
 
         await setDoc(doc(db, "hackathons", hackathonId, "teams", runnerUpId), {
             isRunnerUp: true,
-            position : 2
+            position: 2
 
         }, { merge: true });
+        const winnerDoc = await getDoc(doc(db, "hackathons", hackathonId, "teams", winnerId));
+        const runnerUpDoc = await getDoc(doc(db, "hackathons", hackathonId, "teams", runnerUpId));
+
+        
+
+
+
+        if (winnerDoc.exists()) {
+            console.log("Winner Team Members:");
+            const winnerMembers = winnerDoc.data().members || [];
+            winnerMembers.forEach((member, index) => {
+                console.log(`Member ${index + 1}: ${member}`);
+            });
+            console.log("Winner Team Leader:", winnerDoc.data().leader);
+        }
+        
+        if (runnerUpDoc.exists()) {
+            console.log("Runner-Up Team Members:");
+            const runnerUpMembers = runnerUpDoc.data().members || [];
+            runnerUpMembers.forEach((member, index) => {
+                console.log(`Member ${index + 1}: ${member}`);
+            });
+            console.log("Runner-Up Team Leader:", runnerUpDoc.data().leader);
+        }
+        
+        const users = collection(db, "users");
+        const usersSnapshot = await getDocs(users);
+        
+        usersSnapshot.forEach(async (userDoc) => {
+            const userName = userDoc.id;  // Assuming userDoc.id contains the user's name directly
+            let userPoints = userDoc.data().points || 0;  // Assuming `points` is present in `userDoc.data()`
+        
+            let pointsToAdd = 0;
+        
+            // Compare user's name with winner's team members and leader
+            if (winnerDoc.exists()) {
+                const winnerMembers = winnerDoc.data().members || [];
+                const winnerLeader = winnerDoc.data().leader || "";
+        
+                // Check if user is in the winner's team or is the leader
+                if (winnerMembers.includes(userName) || userName === winnerLeader) {
+                    console.log(`Winner Team Member/Leader Matched: ${userName}`);
+                    pointsToAdd += 25;
+                }
+            }
+        
+            // Compare user's name with runner-up's team members and leader
+            if (runnerUpDoc.exists()) {
+                const runnerUpMembers = runnerUpDoc.data().members || [];
+                const runnerUpLeader = runnerUpDoc.data().leader || "";
+        
+                // Check if user is in the runner-up's team or is the leader
+                if (runnerUpMembers.includes(userName) || userName === runnerUpLeader) {
+                    console.log(`Runner-Up Team Member/Leader Matched: ${userName}`);
+                    pointsToAdd += 15;
+                }
+            }
+        
+            if (pointsToAdd > 0) {
+                userPoints += pointsToAdd;
+                console.log(`Updated Points for ${userName}: ${userPoints}`);
+        
+                // Update the points in Firestore
+                await updateDoc(userDoc.ref, {
+                    points: userPoints
+                });
+            }
+        });
+        
+
 
         alert("Update successful");
         fetchData(); // Refresh the table after updating
@@ -267,15 +352,16 @@ let serachTab = document.getElementById('search');
 serachTab.addEventListener('input', search());
 
 function search() {
-      var text = document.getElementById('search').value;
-      const tr = document.getElementsByTagName('tr');
-      for (let i = 1; i < tr.length; i++) {
-            const playerName = tr[i].children[1].children[0].innerHTML.toLowerCase();
-            const participantId = tr[i].children[2].children[0].innerHTML.toLowerCase();
-            if (!playerName.includes(text.toLowerCase()) && !participantId.includes(text.toLowerCase())) {
-                  tr[i].style.display = 'none';
-            } else {
-                  tr[i].style.display = '';
-            }
-      }
+    var text = document.getElementById('search').value;
+    const tr = document.getElementsByTagName('tr');
+    for (let i = 1; i < tr.length; i++) {
+        const playerName = tr[i].children[1].children[0].innerHTML.toLowerCase();
+        const participantId = tr[i].children[2].children[0].innerHTML.toLowerCase();
+        if (!playerName.includes(text.toLowerCase()) && !participantId.includes(text.toLowerCase())) {
+            tr[i].style.display = 'none';
+        } else {
+            tr[i].style.display = '';
+        }
+    }
 }
+
