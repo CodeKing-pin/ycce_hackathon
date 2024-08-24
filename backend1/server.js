@@ -60,8 +60,14 @@ app.get('/user', async(req, res) => {
 app.get('/userpoints:slug', async(req, res) => {
   const data = ((req.params.slug).split(':'))[1];
   const snapshot = await db.collection('users').doc(data).get();
-  const data2 = await (snapshot.data()).points;
-  res.json({"points": data2})
+  if(snapshot.data()){
+    const data2 = await (snapshot.data()).points;
+    res.json({"points": data2})
+  }
+  else{
+    res.json({"points": 0})
+  }
+  
 })
 
 app.post('/form:slug', async(req, res) => {
